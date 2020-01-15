@@ -45,7 +45,7 @@ namespace Fo76_UDPServer
 
             wolfssl.psk_delegate psk_cb = new wolfssl.psk_delegate(my_psk_server_cb);
 
-            byte[] buff = new byte[1024];
+            byte[] buff = new byte[8192];
             byte[] stubReply = new byte[] { 0xe1, 0x6f, 0x80, 0xff, 0xbe, 0xdc, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02 };
 
             wolfssl.Init();
@@ -123,7 +123,21 @@ namespace Fo76_UDPServer
             Console.WriteLine(con.ep.Port.ToString());
 
             /* read information sent and send a reply */
-            if (wolfssl.read(ssl, buff, 1023) < 0)
+
+            while(true) {
+                int readSize = wolfssl.read(ssl, buff, buff.Length);
+                if (readSize <= 0) {
+                    continue;
+                }
+
+                Console.WriteLine("Received Msg");
+                Console.WriteLine(ByteArrayToString(buff));
+                MessageHandler.OnMessage(ssl, buff, readSize);
+
+                Thread.Sleep(50);
+            }
+
+            /*if (wolfssl.read(ssl, buff, 1023) < 0)
             {
                 Console.WriteLine("Error reading message");
                 Console.WriteLine(wolfssl.get_error(ssl));
@@ -132,7 +146,8 @@ namespace Fo76_UDPServer
                 return;
             }
             Console.WriteLine(ByteArrayToString(buff));
-
+            stubReply[0] = buff[0];
+            stubReply[1] = buff[1];
             if (wolfssl.write(ssl, stubReply, stubReply.Length) != stubReply.Length)
             {
                 Console.WriteLine("Error writing message");
@@ -140,7 +155,7 @@ namespace Fo76_UDPServer
                 udp.Close();
                 clean(ssl, ctx);
                 return;
-            }
+            }*/
 
             Console.WriteLine("At the end freeing stuff");
             wolfssl.shutdown(ssl);
